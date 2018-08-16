@@ -11,10 +11,11 @@ import { isNull, range } from './util';
 // grid size
 const ROW_CT = 50 // 35;
 const COL_CT = 80 // 70;
+const TILE_SIZE = 10; // 15;
 // update time
 const MIN_TICK = 0;
-const MAX_TICK = 1000;
-const DEFAULT_TICK = 200;
+const MAX_TICK = 700;
+const DEFAULT_TICK = 100;
 
 export default class Game extends React.Component {
     constructor(props) {
@@ -22,14 +23,18 @@ export default class Game extends React.Component {
 
         this.state = {
             grid: [[]],
+            rows: ROW_CT,
+            cols: COL_CT,
+            tileSize: TILE_SIZE,
             tickSpeed: DEFAULT_TICK,
+            canUpdate: true,
         };
 
         // async timer stuff
         this.tick = () => {
             const curTime = performance.now();
             const dt = curTime - this.prevTime;
-            if (dt >= this.state.tickSpeed) {
+            if (this.state.canUpdate && dt >= this.state.tickSpeed) {
                 this.update();
                 this.prevTime = curTime;
             }
@@ -39,6 +44,7 @@ export default class Game extends React.Component {
         this.raf = null;
 
         // DEBUG
+        console.log(`run 'window.initGrid(<rowCount>, <colCount>)' to change board size and restart`);
         window.initGrid = this.initGrid.bind(this);
     }
 
@@ -54,8 +60,10 @@ export default class Game extends React.Component {
         clearTimeout(this.initTimeout);
     }
 
-    initGrid(rows = ROW_CT, cols = COL_CT) {
+    initGrid(rows = this.state.rows, cols = this.state.cols) {
         this.setState({
+            rows,
+            cols,
             grid: createGrid(rows, cols)
         });
     }
@@ -72,30 +80,46 @@ export default class Game extends React.Component {
     }
 
     render() {
-
-        const {grid, tickSpeed} = this.state;
+        const {grid, tileSize, tickSpeed} = this.state;
 
         return (
             <div className="game">
-                <Board
-                grid={ grid }
-                handleClick={ (ri, ci)=> this.handleClick(ri, ci) }
-                />
+                {/* UI STUFF */}
                 <div className="game-info">
                     <div className="slider-container">
                         <div>{`tick speed: ${tickSpeed}`}</div>
                         <input type="range" className="slider"
                         min={MIN_TICK} max={MAX_TICK} value={tickSpeed} 
                         onChange={(e)=> {
-                            const newSpeed = e.target.value;
+                            const newSpeed = parseInt(e.target.value);
                             this.setState({ tickSpeed: newSpeed});
+                        }}
+                        />
+                    </div>
+                    <div className="slider-container">
+                        <div>{`tile size: ${this.state.tileSize}`}</div>
+                        <input type="range" className="slider"
+                        min={5} max={20} value={tileSize} 
+                        onChange={(e)=> {
+                            const newSize = parseInt(e.target.value);
+                            this.setState({ tileSize: newSize });
                         }}
                         />
                     </div>
                     <div>
                         <button onClick={()=> this.initGrid()}>reset game</button>
                     </div>
+                    <div>
+                        <button onClick={()=> this.setState({canUpdate: !this.state.canUpdate})}>{this.state.canUpdate ? "pause" : "play"}</button>
+                    </div>
                 </div>
+
+                {/* GAME BOARD */}
+                <Board
+                grid={ grid }
+                tileSize={ tileSize }
+                handleClick={ (ri, ci)=> this.handleClick(ri, ci) }
+                />
             </div>
         );
     }
@@ -104,11 +128,11 @@ export default class Game extends React.Component {
 class Board extends React.Component {
 
     renderSquare(data, ri, ci) {
-        const { handleClick } = this.props;
+        const { tileSize, handleClick } = this.props;
         return (
             <Square
             key={ci}
-            value={data} ri={ri} ci={ci}
+            value={data} ri={ri} ci={ci} size={tileSize}
             handleClick={ handleClick }
             />
         );
@@ -135,11 +159,16 @@ class Board extends React.Component {
 }
 
 const Square = (props) => {
-    const { value, ri, ci, handleClick } = props;
+    const { value, ri, ci, size, handleClick } = props;
     const className = `square ${value === true ? 'active' : ''}`;
-    // const renderVal = (value === true ? 'X' : ' ');
+    const style = { width: size, height: size };
+
     return (
-        <div className={className} onClick={(evt) => handleClick(ri, ci)}>
+        <div
+        className={className}
+        style={style}
+        onClick={(evt) => handleClick(ri, ci)}
+        >
         {/* { renderVal } */}
         </div>
     );
