@@ -12,7 +12,8 @@
     "build": "react-scripts build",
     "test": "react-scripts test --env=jsdom",
     "eject": "react-scripts eject",
-    "test-game": "babel-node --presets es2015 src/gameTest.js"
+    "test-game": "babel-node --presets es2015 src/gameTest.js",
+    "deploy-gh-pages": "rm -rf docs/* && npm run build && cp -r build/* docs"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
